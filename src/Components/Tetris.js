@@ -13,11 +13,23 @@ import { useGameStatus } from "../hooks/useGameStatus";
 import Stage from "./Stage";
 import Display from "./Display";
 import StartButton from "./StartButton";
+import StopButton from "./StopButton";
 
 
 const Tetris = () => {
   const [dropTime, setDropTime] = useState(null);
   const [gameOver, setGameOver] = useState(false);
+
+ 
+
+  // Stop game logic
+  const handleStopGame = () => {
+    setGameOver(true);
+      setDropTime(null);
+
+    // ...any additional cleanup logic...
+  };
+
 
   const [player, updatePlayerPos, resetPlayer, playerRotate] = usePlayer();
   const [stage, setStage, rowsCleared] = useStage(player, resetPlayer);
@@ -120,6 +132,7 @@ const Tetris = () => {
             </div>
           )}
           <StartButton callback={startGame} />
+           <StopButton onStop={handleStopGame} />
         </aside>
       </StyledTetris>
     </StyledTetrisWrapper>
