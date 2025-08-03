@@ -6,8 +6,8 @@ export const StyledTetrisWrapper = styled.div`
   width: 100vw;
   height: 100vh;
   background: url(${bgImage}) #000;
-  background-size: cover;
-  overflow: hidden;
+  background-size: 100%;
+  overflow: visible;
 `;
 
 export const StyledTetris = styled.div`
@@ -23,3 +23,6 @@ export const StyledTetris = styled.div`
     padding: 0 20px;
   }
 `;
+
+
+

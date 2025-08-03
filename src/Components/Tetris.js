@@ -14,6 +14,7 @@ import Stage from "./Stage";
 import Display from "./Display";
 import StartButton from "./StartButton";
 import StopButton from "./StopButton";
+import TouchControls from "./TouchControls";
 
 
 const Tetris = () => {
@@ -37,6 +38,12 @@ const Tetris = () => {
     useGameStatus(rowsCleared);
 
   console.log("re-render");
+
+   const handleLeft = () => movePlayer(-1);
+  const handleRight = () => movePlayer(1);
+  const handleRotate = () => playerRotate(stage, 1);
+  const handleDown = () => dropPlayer();
+
 
   const movePlayer = (dir) => {
     if (!checkCollision(player, stage, { x: dir, y: 0 })) {
@@ -118,7 +125,14 @@ const Tetris = () => {
       tabIndex="0"
       onKeyDown={(e) => move(e)}
       onKeyUp={keyUp}
+
     >
+       <TouchControls
+        onLeft={handleLeft}
+        onRight={handleRight}
+        onRotate={handleRotate}
+        onDown={handleDown}
+      />
       <StyledTetris>
         <Stage stage={stage} />
         <aside>
