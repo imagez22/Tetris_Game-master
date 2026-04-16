@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 
 import { createStage, checkCollision } from "../gameHelper";
 import { StyledTetrisWrapper, StyledTetris } from "./Styles/StyledTertis";
@@ -14,12 +14,26 @@ import Stage from "./Stage";
 import Display from "./Display";
 import StartButton from "./StartButton";
 import StopButton from "./StopButton";
-import TouchControls from "./TouchControls";
+import styled from "styled-components";
+
+const ButtonContainer = styled.div`
+  display: flex;
+  gap: 9.5px;
+
+  @media (max-width: 768px) {
+    flex-direction: column;
+    gap: 7.6px;
+  }
+`;
 
 
 const Tetris = () => {
   const [dropTime, setDropTime] = useState(null);
   const [gameOver, setGameOver] = useState(false);
+
+  // Touch handling state
+  const touchStartRef = useRef(null);
+  const touchStartTimeRef = useRef(null);
 
  
 
@@ -38,11 +52,6 @@ const Tetris = () => {
     useGameStatus(rowsCleared);
 
   console.log("re-render");
-
-   const handleLeft = () => movePlayer(-1);
-  const handleRight = () => movePlayer(1);
-  const handleRotate = () => playerRotate(stage, 1);
-  const handleDown = () => dropPlayer();
 
 
   const movePlayer = (dir) => {
@@ -115,8 +124,59 @@ const Tetris = () => {
         dropPlayer();
       } else if (keyCode === 38) {
         playerRotate(stage, 1);
+      } else if (keyCode === 32) {
+        // Space for hard drop
+        dropPlayer();
       }
     }
+  };
+
+  // Touch event handlers
+  const handleTouchStart = (e) => {
+    if (gameOver) return;
+    const touch = e.touches[0];
+    touchStartRef.current = { x: touch.clientX, y: touch.clientY };
+    touchStartTimeRef.current = Date.now();
+  };
+
+  const handleTouchEnd = (e) => {
+    if (gameOver || !touchStartRef.current) return;
+
+    const touch = e.changedTouches[0];
+    const deltaX = touch.clientX - touchStartRef.current.x;
+    const deltaY = touch.clientY - touchStartRef.current.y;
+    const deltaTime = Date.now() - touchStartTimeRef.current;
+
+    const minSwipeDistance = 50;
+    const maxTapTime = 200;
+
+    // Check for tap (rotate)
+    if (deltaTime < maxTapTime && Math.abs(deltaX) < 30 && Math.abs(deltaY) < 30) {
+      playerRotate(stage, 1);
+      return;
+    }
+
+    // Check for swipes
+    if (Math.abs(deltaX) > Math.abs(deltaY)) {
+      // Horizontal swipe
+      if (Math.abs(deltaX) > minSwipeDistance) {
+        if (deltaX > 0) {
+          movePlayer(1); // Swipe right
+        } else {
+          movePlayer(-1); // Swipe left
+        }
+      }
+    } else {
+      // Vertical swipe
+      if (Math.abs(deltaY) > minSwipeDistance) {
+        if (deltaY > 0) {
+          dropPlayer(); // Swipe down
+        }
+      }
+    }
+
+    touchStartRef.current = null;
+    touchStartTimeRef.current = null;
   };
 
   return (
@@ -125,14 +185,9 @@ const Tetris = () => {
       tabIndex="0"
       onKeyDown={(e) => move(e)}
       onKeyUp={keyUp}
-
+      onTouchStart={handleTouchStart}
+      onTouchEnd={handleTouchEnd}
     >
-       <TouchControls
-        onLeft={handleLeft}
-        onRight={handleRight}
-        onRotate={handleRotate}
-        onDown={handleDown}
-      />
       <StyledTetris>
         <Stage stage={stage} />
         <aside>
@@ -145,8 +200,10 @@ const Tetris = () => {
               <Display text={`Level: ${level}`} />
             </div>
           )}
-          <StartButton callback={startGame} />
-           <StopButton onStop={handleStopGame} />
+          <ButtonContainer>
+            <StartButton callback={startGame} />
+            <StopButton onStop={handleStopGame} />
+          </ButtonContainer>
         </aside>
       </StyledTetris>
     </StyledTetrisWrapper>
