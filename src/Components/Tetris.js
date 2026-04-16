@@ -1,4 +1,4 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 
 import { createStage, checkCollision } from "../gameHelper";
 import { StyledTetrisWrapper, StyledTetris } from "./Styles/StyledTertis";
@@ -34,6 +34,29 @@ const Tetris = () => {
   // Touch handling state
   const touchStartRef = useRef(null);
   const touchStartTimeRef = useRef(null);
+  const longPressTimerRef = useRef(null);
+  const [isRapidDropping, setIsRapidDropping] = useState(false);
+
+  // Cleanup long press timer on unmount or game over
+  useEffect(() => {
+    return () => {
+      if (longPressTimerRef.current) {
+        clearTimeout(longPressTimerRef.current);
+      }
+      setIsRapidDropping(false);
+    };
+  }, []);
+
+  // Stop rapid dropping when game ends
+  useEffect(() => {
+    if (gameOver) {
+      setIsRapidDropping(false);
+      if (longPressTimerRef.current) {
+        clearTimeout(longPressTimerRef.current);
+        longPressTimerRef.current = null;
+      }
+    }
+  }, [gameOver]);
 
  
 
@@ -114,6 +137,13 @@ const Tetris = () => {
     drop();
   }, dropTime);
 
+  // Rapid dropping for long press
+  useInterval(() => {
+    if (isRapidDropping && !gameOver) {
+      dropPlayer();
+    }
+  }, isRapidDropping ? 50 : null); // Drop every 50ms during rapid drop
+
   const move = ({ keyCode }) => {
     if (!gameOver) {
       if (keyCode === 37) {
@@ -137,10 +167,24 @@ const Tetris = () => {
     const touch = e.touches[0];
     touchStartRef.current = { x: touch.clientX, y: touch.clientY };
     touchStartTimeRef.current = Date.now();
+
+    // Set long press timer for rapid dropping
+    longPressTimerRef.current = setTimeout(() => {
+      setIsRapidDropping(true);
+    }, 500); // 500ms for long press
   };
 
   const handleTouchEnd = (e) => {
     if (gameOver || !touchStartRef.current) return;
+
+    // Clear long press timer
+    if (longPressTimerRef.current) {
+      clearTimeout(longPressTimerRef.current);
+      longPressTimerRef.current = null;
+    }
+
+    // Stop rapid dropping
+    setIsRapidDropping(false);
 
     const touch = e.changedTouches[0];
     const deltaX = touch.clientX - touchStartRef.current.x;
@@ -150,7 +194,7 @@ const Tetris = () => {
     const minSwipeDistance = 50;
     const maxTapTime = 200;
 
-    // Check for tap (rotate)
+    // Check for tap (rotate) - only if not a long press
     if (deltaTime < maxTapTime && Math.abs(deltaX) < 30 && Math.abs(deltaY) < 30) {
       playerRotate(stage, 1);
       return;
